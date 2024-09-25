@@ -1,0 +1,9 @@
+{
+  "strings": {
+    "DEADLINE": "Impermanence",
+    "EQUIPMENT_DEADLINE_NAME": "Impermanence",
+    "EQUIPMENT_DEADLINE_PICKUP": "Gain a chance to double items from chests... <style=cDeath>BUT you have a time limit each stage.</style>.",
+    "EQUIPMENT_DEADLINE_DESC": "Before defeating the stage boss, chests have a <style=clsUtility>20%</style> <style=cStack>(+20% per stack)</style> to grant <style=clsUtility>double items</style>. After <style=cDeath>10</style> <style=cStack>(-1 per stack)</style> minutes without defeating the stage boss, <style=cDeath>you die, and cannot be revived</style>.
+    "EQUIPMENT_DEADLINE_LORE": "",
+  },
+}

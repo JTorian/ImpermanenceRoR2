@@ -1,0 +1,9 @@
+{
+  "strings": {
+    "DEADLINE": "Impermanence",
+    "ITEM_DEADLINE_NAME": "Impermanence",
+    "ITEM_DEADLINE_PICKUP": "Gain a chance to double items from chests... <style=cDeath>BUT you have a time limit each stage.</style>.",
+    "ITEM_DEADLINE_DESC": "Chests have a <style=cIsUtility>20%</style> <style=cStack>(+20% per stack)</style> to grant <style=cIsUtility>double items</style>. After <style=cDeath>12</style> minutes <style=cStack>(-20% per stack)</style>, <style=cDeath>you die</style>.",
+    "ITEM_DEADLINE_LORE": ""
+  }
+}

@@ -1,9 +1,8 @@
-# R2Boilerplate
+# Impermanence
+A basic mod implementing a new lunar item:
 
-This repository contains a sample mod for Risk of Rain 2.
+IMPERMANENCE
+Gain a chance to recieve bonus items from chests BUT you have a time limit each stage.
 
-You can clone this repository, open the visual studio solution file and compile it immediately.
-
-This repository is meant to represent best practices for starting a simple mod.
-
-Once your mod get compiled, you can utilize the Thunderstore folder for later uploading it to https://thunderstore.io/c/riskofrain2/
+Big thanks to TheMysticSword, who's item mod I heavily referenced to understand the codebase: https://github.com/TheMysticSword/MysticsItems
+And thanks to the contributers of the R2Boilerplate, who saved me writing boring code so I could get to writing fun code: https://github.com/risk-of-thunder/R2Boilerplate

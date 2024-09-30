@@ -1,4 +1,6 @@
-﻿using R2API;
+﻿using EntityStates.AffixVoid;
+using IL.RoR2.Achievements.Merc;
+using R2API;
 using RoR2;
 using RoR2.Navigation;
 using System;
@@ -7,15 +9,16 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.Networking;
+using UnityEngine.UIElements.StyleSheets.Syntax;
 
 namespace Impermanence
 {
     public class ExtraItemsLunar
     {
         public static ItemDef itemDef;
-        public static BuffDef chestBuff;
+        // public static BuffDef chestBuff;
 
-        public const float baseTimer = 730f; //At one item, the timer is 15 minutes. SHOULD be more than enough
+        public const float baseTimer = 730f; //At one item, the timer is 12 minutes. SHOULD be more than enough
 
 
         public static DamageAPI.ModdedDamageType damageType;
@@ -55,13 +58,13 @@ namespace Impermanence
             ItemAPI.Add(new CustomItem(itemDef, displayRules));
 
             //BUFF//
-            chestBuff = ScriptableObject.CreateInstance<BuffDef>();
+            // chestBuff = ScriptableObject.CreateInstance<BuffDef>();
 
-            chestBuff.name = "Lunar boon";
-            chestBuff.canStack = true;
-            chestBuff.isHidden = false;
-            chestBuff.isDebuff = false;
-            chestBuff.isCooldown = true;
+            // chestBuff.name = "Lunar boon";
+            // chestBuff.canStack = true;
+            // chestBuff.isHidden = false;
+            // chestBuff.isDebuff = false;
+            // chestBuff.isCooldown = true;
 
             On.RoR2.CharacterBody.OnInventoryChanged += (orig, self) =>
             {
@@ -69,8 +72,45 @@ namespace Impermanence
                 self.AddItemBehavior<ImpermanenceBehaviour>(self.inventory.GetItemCount(itemDef));
             };
 
-            Hooks();
+            On.RoR2.PurchaseInteraction.OnInteractionBegin += (orig, self, activator) =>
+            {
+                if (!self.saleStarCompatible)
+                {
+                    orig(self, activator);
+                    return;
+                }
+                CharacterBody body = activator.GetComponent<CharacterBody>();
+                if (body)
+                {
+                    ImpermanenceBehaviour component = body.GetComponent<ImpermanenceBehaviour>();
+                    int multiplier = component.TryDoubleItem();
+                    if (component && multiplier > 1)
+                    {   
+                        Log.Debug("multiplying items");
 
+                        
+                        //Flag to be doubled
+                        ImpermananceMultiplyItemBehaviour multiplyFlag = self.gameObject.AddComponent<ImpermananceMultiplyItemBehaviour>();
+                        multiplyFlag.multiplier = multiplier;
+                    }
+                }
+                orig(self, activator);
+            };
+
+            On.RoR2.ChestBehavior.ItemDrop +=  (orig, self) =>
+            {
+                PurchaseInteraction purchaseInteraction = self.gameObject.GetComponent<PurchaseInteraction>();
+                if (purchaseInteraction)
+                {
+                    ImpermananceMultiplyItemBehaviour component = purchaseInteraction.GetComponent<ImpermananceMultiplyItemBehaviour>();
+
+                    if(component)
+                    {
+                        self.dropCount *= component.multiplier;
+                    }
+                }
+                orig(self);
+            };
         }
 
         public class ImpermanenceBehaviour : CharacterBody.ItemBehavior
@@ -85,6 +125,8 @@ namespace Impermanence
 
             public bool countdown10Played = false;
             public uint countdown10ID;
+
+            public List<PurchaseInteraction> interactions = new List<PurchaseInteraction>();
 
             public void Start()
             {
@@ -134,6 +176,7 @@ namespace Impermanence
                     }
                     else
                     {
+                        // body.RemoveBuff(chestBuff);
                         if (countdown10Played)
                         {
                             countdown10Played = false;
@@ -159,15 +202,10 @@ namespace Impermanence
                 ResetTimer();
             }
 
-            public void On_RoR2_PurchaseInteraction_OnInteractionBegin()
-            {
-                
-            }
-
             public void UpdateItemBasedInfo()
             {
                 if (!body) return;
-                countdownTimer = Mathf.Min(baseTimer * (Mathf.Pow(0.8f, stack-1)), countdownTimer); // Cut the timer down, unless the timer is already low enough
+                countdownTimer = Mathf.Min(baseTimer * Mathf.Pow(0.8f, stack-1), countdownTimer); // Cut the timer down, unless the timer is already low enough
             }
 
             public void ResetTimer()
@@ -175,6 +213,20 @@ namespace Impermanence
                 countdownTimer = baseTimer;
                 countdownCalculated = false;
                 countdownCalculationTimer = 0.5f;
+            }
+
+            public int TryDoubleItem()
+            {
+                if (!body) return 1;
+
+                float proc = 0.2f * stack;
+
+                //Essentially, if you have a > 100% chance, always double the item with a chance to TRIPLE
+                int multiplier = (int)MathF.Floor(proc) + 1;
+                Log.Debug("TryDoubleItem multiplier: " + multiplier);
+                if (Util.CheckRoll(proc - multiplier + 1, body.master)) multiplier++;
+
+                return multiplier;
             }
 
             public void OnEnable()
@@ -187,53 +239,9 @@ namespace Impermanence
                 InstanceTracker.Remove(this);
             }
         }
-        public static void Hooks()
+        public class ImpermananceMultiplyItemBehaviour : MonoBehaviour
         {
-
-            //Handle purchases
-            On.RoR2.PurchaseInteraction.OnInteractionBegin += (orig, self, activator) =>
-            {
-
-                Log.Debug("PurchaseInteraction_OnInteractionBegin " + self.gameObject.name);
-
-                // Server/host side only
-                if (!NetworkServer.active) { orig(self, activator); return; }
-
-                // Check from orig
-                if (!self.CanBeAffordedByInteractor(activator))
-                {
-                    orig(self, activator);
-                    return;
-                }
-
-                var player_body = activator.GetComponent<CharacterBody>();
-                if (player_body != null) { orig(self, activator); return; }
-
-                int stacks = player_body.inventory.GetItemCount(itemDef);
-
-                // Check the interactable can be doubled, and if the player has the buff
-                if (
-                    player_body.inventory == null
-                    || stacks < 1
-                    || self == null
-                    || !self.saleStarCompatible)
-                { orig(self, activator); return; }
-
-                TryDoubleItem(self, player_body, stacks);
-                { orig(self, activator); return; }
-            };
-
+            public int multiplier;
         }
-
-        public static void TryDoubleItem(PurchaseInteraction chest, CharacterBody player, int stacks)
-        {
-            float proc = (0.2f * stacks);
-            if (Util.CheckRoll(proc, player.master))
-            {
-                Log.Debug("Double!");
-                Chat.AddMessage("Double!");
-            }
-        }
-
     }
 }

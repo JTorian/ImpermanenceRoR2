@@ -25,7 +25,49 @@ namespace Impermanence
         public static ItemDef itemDef;
         // public static BuffDef chestBuff;
 
-        public const float baseTimer = 730f; //At one item, the timer is 12 minutes. SHOULD be more than enough
+        public static ConfigurableValue<bool> isEnabled = new(
+            "Item: Impermanence",
+            "Enabled",
+            true,
+            "Whether or not the item is enabled.",
+            new List<string>()
+            {
+                "ITEM_DEADLINE_DESC"
+            }
+        );
+        public static ConfigurableValue<float> baseTimer = new(
+            "Item: Impermanence",
+            "Base Time Limit",
+            730f,
+            "The time limit with one stack of impermanence.",
+            new List<string>()
+            {
+                "ITEM_DEADLINE_DESC"
+            }
+        );
+        public static ConfigurableValue<float> bonusChancePerStack = new(
+            "Item: Impermanence",
+            "Chance per Stack",
+            20f,
+            "The chance of getting bonus items as a percentage.",
+            new List<string>()
+            {
+                "ITEM_DEADLINE_DESC"
+            }
+        );
+        public static ConfigurableValue<float> timePerStack = new(
+            "Item: Impermanence",
+            "Time Decrease per Stack",
+            20f,
+            "The decrease in remaining time as a percentage.",
+            new List<string>()
+            {
+                "ITEM_DEADLINE_DESC"
+            }
+        );
+
+        public static float bonusChancePercent = bonusChancePerStack/100f;
+        public static float timerDecreasePercent = timePerStack/100f;
 
 
         public static DamageAPI.ModdedDamageType damageType;
@@ -237,7 +279,7 @@ namespace Impermanence
             public void UpdateItemBasedInfo()
             {
                 if (!body) return;
-                countdownTimer = Mathf.Min(baseTimer * Mathf.Pow(0.8f, stack-1), countdownTimer); // Cut the timer down, unless the timer is already low enough
+                countdownTimer = Mathf.Min(baseTimer * Mathf.Pow( 1 - timerDecreasePercent, stack-1), countdownTimer); // Cut the timer down, unless the timer is already low enough
             }
 
             public void ResetTimer()
@@ -251,14 +293,14 @@ namespace Impermanence
             {
                 if (!body) return 1;
 
-                float proc = 0.2f * stack;
+                float proc = bonusChancePercent * stack;
 
                 //Essentially, if you have a > 100% chance, always double the item with a chance to TRIPLE
-                int multiplier = (int)MathF.Floor(proc) + 1;
-                Log.Debug("TryDoubleItem multiplier: " + multiplier);
-                if (Util.CheckRoll(proc - multiplier + 1, body.master)) multiplier++;
-
-                return multiplier;
+                int bonus = (int)MathF.Floor(proc);
+                if (Util.CheckRoll((proc - bonus)*100f, body.master)) bonus += 1;
+                
+                Debug.Log("TryDoubleItem(): multiplier=" + (bonus+1) + " proc=" + proc);
+                return bonus + 1;
             }
 
             public void OnEnable()

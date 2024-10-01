@@ -1,15 +1,22 @@
-﻿using EntityStates.AffixVoid;
-using IL.RoR2.Achievements.Merc;
-using R2API;
-using RoR2;
+﻿using RoR2;
 using RoR2.Navigation;
-using System;
+using R2API;
+using R2API.Utils;
+using R2API.Networking;
+using R2API.Networking.Interfaces;
+using UnityEngine;
+using UnityEngine.Networking;
+using Mono.Cecil.Cil;
+using MonoMod.Cil;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
+using System.Collections.ObjectModel;
+using RoR2.UI;
+using UnityEngine.Rendering.PostProcessing;
+using UnityEngine.UI;
 using UnityEngine.AddressableAssets;
-using UnityEngine.Networking;
-using UnityEngine.UIElements.StyleSheets.Syntax;
+using RoR2.Projectile;
+using System;
 
 namespace Impermanence
 {
@@ -44,7 +51,10 @@ namespace Impermanence
             itemDef.tags = new ItemTag[]
             {
                 ItemTag.Utility,
-                ItemTag.InteractableRelated
+                ItemTag.InteractableRelated,
+                ItemTag.AIBlacklist,
+                ItemTag.CannotCopy,
+                ItemTag.OnStageBeginEffect
             };
 
 
@@ -64,8 +74,13 @@ namespace Impermanence
             // chestBuff.canStack = true;
             // chestBuff.isHidden = false;
             // chestBuff.isDebuff = false;
-            // chestBuff.isCooldown = true;
+            // chestBuff.isCooldown = false;
 
+            Hooks();
+        }
+
+        public static void Hooks()
+        {
             On.RoR2.CharacterBody.OnInventoryChanged += (orig, self) =>
             {
                 orig(self);
@@ -87,10 +102,10 @@ namespace Impermanence
                     if (component && multiplier > 1)
                     {   
                         Log.Debug("multiplying items");
+                        // Util.PlaySound(RoR2.DLC2Content.Items.LowerPricedChests., body.gameObject);
 
-                        
                         //Flag to be doubled
-                        ImpermananceMultiplyItemBehaviour multiplyFlag = self.gameObject.AddComponent<ImpermananceMultiplyItemBehaviour>();
+                        ImpermanenceMultiplyItemBehaviour multiplyFlag = self.gameObject.AddComponent<ImpermanenceMultiplyItemBehaviour>();
                         multiplyFlag.multiplier = multiplier;
                     }
                 }
@@ -98,20 +113,37 @@ namespace Impermanence
             };
 
             On.RoR2.ChestBehavior.ItemDrop +=  (orig, self) =>
-            {
+             {
                 PurchaseInteraction purchaseInteraction = self.gameObject.GetComponent<PurchaseInteraction>();
                 if (purchaseInteraction)
                 {
-                    ImpermananceMultiplyItemBehaviour component = purchaseInteraction.GetComponent<ImpermananceMultiplyItemBehaviour>();
+                    ImpermanenceMultiplyItemBehaviour component = purchaseInteraction.GetComponent<ImpermanenceMultiplyItemBehaviour>();
 
                     if(component)
                     {
+                        //It's lunar, so it should MULTIPLY sale star
                         self.dropCount *= component.multiplier;
                     }
                 }
                 orig(self);
             };
+
+            GenericGameEvents.OnPlayerCharacterDeath += GenericGameEvents_OnPlayerCharacterDeath;
         }
+
+        public static string[] impermanenceDeathQuoteTokens = (from i in Enumerable.Range(0, 5) select "PLAYER_DEATH_QUOTE_IMPERMANENCE_" + TextSerialization.ToStringInvariant(i)).ToArray();
+        public static void GenericGameEvents_OnPlayerCharacterDeath(DamageReport damageReport, ref string deathQuote)
+        {
+            if (damageReport.victimBody)
+                {
+                    ImpermanenceBehaviour component = damageReport.victimBody.GetComponent<ImpermanenceBehaviour>();
+                    if (component && component.diedFromTimer)
+                    {
+                        deathQuote = impermanenceDeathQuoteTokens[UnityEngine.Random.Range(0, impermanenceDeathQuoteTokens.Length)];
+                    }
+                }
+        }
+
 
         public class ImpermanenceBehaviour : CharacterBody.ItemBehavior
         {
@@ -239,7 +271,7 @@ namespace Impermanence
                 InstanceTracker.Remove(this);
             }
         }
-        public class ImpermananceMultiplyItemBehaviour : MonoBehaviour
+        public class ImpermanenceMultiplyItemBehaviour : MonoBehaviour
         {
             public int multiplier;
         }

@@ -35,7 +35,7 @@ namespace Impermanence
 
             Log.Info($"Greetings from impermanence init!");
 
-
+            GenericGameEvents.Init();
             ExtraItemsLunar.Init();
         }
 

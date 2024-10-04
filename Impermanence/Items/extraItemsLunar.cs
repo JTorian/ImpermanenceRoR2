@@ -32,7 +32,7 @@ namespace Impermanence
             "Whether or not the item is enabled.",
             new List<string>()
             {
-                "ITEM_DEADLINE_DESC"
+                "ITEM_EXTRAITEMSLUNAR_DESC"
             }
         );
         public static ConfigurableValue<float> baseTimer = new(
@@ -42,7 +42,7 @@ namespace Impermanence
             "The time limit with one stack of impermanence.",
             new List<string>()
             {
-                "ITEM_DEADLINE_DESC"
+                "ITEM_EXTRAITEMSLUNAR_DESC"
             }
         );
         public static ConfigurableValue<float> bonusChancePerStack = new(
@@ -52,7 +52,7 @@ namespace Impermanence
             "The chance of getting bonus items as a percentage.",
             new List<string>()
             {
-                "ITEM_DEADLINE_DESC"
+                "ITEM_EXTRAITEMSLUNAR_DESC"
             }
         );
         public static ConfigurableValue<float> timePerStack = new(
@@ -62,7 +62,7 @@ namespace Impermanence
             "The decrease in remaining time as a percentage.",
             new List<string>()
             {
-                "ITEM_DEADLINE_DESC"
+                "ITEM_EXTRAITEMSLUNAR_DESC"
             }
         );
 
@@ -74,14 +74,15 @@ namespace Impermanence
 
         internal static void Init()
         {
+            Debug.Log("Initializing Impermanence Item");
             //ITEM//
             itemDef = ScriptableObject.CreateInstance<ItemDef>();
 
-            itemDef.name = "DEADLINE";
-            itemDef.nameToken = "ITEM_DEADLINE_NAME";
-            itemDef.pickupToken = "ITEM_DEADLINE_PICKUP";
-            itemDef.descriptionToken = "ITEM_DEADLINE_DESC";
-            itemDef.loreToken = "ITEM_DEADLINE_LORE";
+            itemDef.name = "EXTRAITEMSLUNAR";
+            itemDef.nameToken = "ITEM_EXTRAITEMSLUNAR_NAME";
+            itemDef.pickupToken = "ITEM_EXTRAITEMSLUNAR_PICKUP";
+            itemDef.descriptionToken = "ITEM_EXTRAITEMSLUNAR_DESC";
+            itemDef.loreToken = "ITEM_EXTRAITEMSLUNAR_LORE";
 
             itemDef.AutoPopulateTokens();
 
@@ -99,15 +100,17 @@ namespace Impermanence
                 ItemTag.OnStageBeginEffect
             };
 
-
+            
             itemDef.pickupIconSprite = Addressables.LoadAssetAsync<Sprite>("RoR2/DLC1/FragileDamageBonus/texDelicateWatchIcon.png").WaitForCompletion();
-            itemDef.pickupModelPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/DLC1/FragileDamageBonus/DisplayDelicateWatch.prefab").WaitForCompletion();
+            itemDef.pickupModelPrefab = ImpermanencePlugin.AssetBundle.LoadAsset<GameObject>("Assets/Items/candle/impermanence.prefab");
 
             itemDef.canRemove = true;
             itemDef.hidden = false;
 
             ItemDisplayRuleDict displayRules = new ItemDisplayRuleDict(null);
             ItemAPI.Add(new CustomItem(itemDef, displayRules));
+
+            Debug.Log("Impermanence Initialized");
 
             //BUFF//
             // chestBuff = ScriptableObject.CreateInstance<BuffDef>();
@@ -131,17 +134,25 @@ namespace Impermanence
 
             On.RoR2.PurchaseInteraction.OnInteractionBegin += (orig, self, activator) =>
             {
-                if (!self.saleStarCompatible)
+                if (!self.saleStarCompatible || !self.CanBeAffordedByInteractor(activator))
                 {
                     orig(self, activator);
                     return;
                 }
+
                 CharacterBody body = activator.GetComponent<CharacterBody>();
+
                 if (body)
                 {
                     ImpermanenceBehaviour component = body.GetComponent<ImpermanenceBehaviour>();
+                    if (!component)
+                    {
+                        orig(self, activator);
+                        return;
+                    }
+
                     int multiplier = component.TryDoubleItem();
-                    if (component && multiplier > 1)
+                    if (multiplier > 1)
                     {   
                         Log.Debug("multiplying items");
                         // Util.PlaySound(RoR2.DLC2Content.Items.LowerPricedChests., body.gameObject);
@@ -173,7 +184,7 @@ namespace Impermanence
             GenericGameEvents.OnPlayerCharacterDeath += GenericGameEvents_OnPlayerCharacterDeath;
         }
 
-        public static string[] impermanenceDeathQuoteTokens = (from i in Enumerable.Range(0, 5) select "PLAYER_DEATH_QUOTE_IMPERMANENCE_" + TextSerialization.ToStringInvariant(i)).ToArray();
+        public static string[] impermanenceDeathQuoteTokens = (from i in Enumerable.Range(0, 5) select "PLAYER_DEATH_QUOTE_EXTRAITEMSLUNAR_" + TextSerialization.ToStringInvariant(i)).ToArray();
         public static void GenericGameEvents_OnPlayerCharacterDeath(DamageReport damageReport, ref string deathQuote)
         {
             if (damageReport.victimBody)
@@ -199,8 +210,6 @@ namespace Impermanence
 
             public bool countdown10Played = false;
             public uint countdown10ID;
-
-            public List<PurchaseInteraction> interactions = new List<PurchaseInteraction>();
 
             public void Start()
             {

@@ -20,20 +20,21 @@ namespace Impermanence
     {
 
         public const string PluginGUID = PluginAuthor + "." + PluginName;
-        public const string PluginAuthor = "jtorian";
+        public const string PluginAuthor = "Braquen";
         public const string PluginName = "Impermanance";
         public const string PluginVersion = "0.0.1";
 
 
         public static PluginInfo pluginInfo;
+        public static AssetBundle AssetBundle;
 
         public void Awake()
         {
-            pluginInfo = Info;
-
             Log.Init(Logger);
-
             Log.Info($"Greetings from impermanence init!");
+
+            pluginInfo = Info;
+            AssetBundle = AssetBundle.LoadFromFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(pluginInfo.Location), "impermanenceassetbundle"));
 
             GenericGameEvents.Init();
             ExtraItemsLunar.Init();

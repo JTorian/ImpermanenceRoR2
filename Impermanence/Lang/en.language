@@ -1,23 +1,27 @@
 {
   "strings": {
-    "DEADLINE": "Impermanence",
-    "ITEM_DEADLINE_NAME": "Impermanence",
-    "ITEM_DEADLINE_PICKUP": "Gain a chance to double items from chests... <style=cDeath>BUT you have a time limit each stage.</style>.",
-    "ITEM_DEADLINE_DESC": "Chests have a <style=cIsUtility>20%</style> <style=cStack>(+20% per stack)</style> to grant <style=cIsUtility>double items</style>. After <style=cDeath>12</style> minutes on a stage, <style=cStack>(-20% per stack)</style>, <style=cDeath>you die</style>.",
-    "ITEM_DEADLINE_LORE": ""
+    "EXTRAITEMSLUNAR": "Impermanence",
+    "ITEM_EXTRAITEMSLUNAR_NAME": "Impermanence",
+    "ITEM_EXTRAITEMSLUNAR_PICKUP": "Gain a chance to double items from chests... <style=cDeath>BUT you have a time limit each stage.</style>.",
+    "ITEM_EXTRAITEMSLUNAR_DESC": "Chests have a <style=cIsUtility>20%</style> <style=cStack>(+20% per stack)</style> to grant <style=cIsUtility>double items</style>. After <style=cDeath>12</style> minutes on a stage, <style=cStack>(-20% per stack)</style>, <style=cDeath>you die</style>.",
+    "ITEM_EXTRAITEMSLUNAR_LORE": "
+
+    Servitude is not without its benefits. I can grant you many things. 
+
+    Shall we make a deal?"
 
     //[DEATH QUOTES]
-    "PLAYER_DEATH_QUOTE_IMPERMANENCE_0_2P": "Time's up!",
-    "PLAYER_DEATH_QUOTE_IMPERMANENCE_0": "{0} ran out of time!",
-    "PLAYER_DEATH_QUOTE_IMPERMANENCE_1_2P": "You melted away.",
-    "PLAYER_DEATH_QUOTE_IMPERMANENCE_1": "{0} melted away.",
-    "PLAYER_DEATH_QUOTE_IMPERMANENCE_2_2P": "The candle that burns twice as bright...",
-    "PLAYER_DEATH_QUOTE_IMPERMANENCE_2": "{0} was snuffed out.",
-    "PLAYER_DEATH_QUOTE_IMPERMANENCE_3_2P": "Time to pay up.",
-    "PLAYER_DEATH_QUOTE_IMPERMANENCE_3": "{0}'s debts have been paid.",
-    "PLAYER_DEATH_QUOTE_IMPERMANENCE_4_2P": "You're too slow!'.",
-    "PLAYER_DEATH_QUOTE_IMPERMANENCE_4": "{0} wasn't fast enough!",
-    "PLAYER_DEATH_QUOTE_IMPERMANENCE_5_2P": "Ask not for whom the bell tolls.",
-    "PLAYER_DEATH_QUOTE_IMPERMANENCE_5": "The bell tolls for {0}.",
+    "PLAYER_DEATH_QUOTE_EXTRAITEMSLUNAR_0_2P": "Time's up!",
+    "PLAYER_DEATH_QUOTE_EXTRAITEMSLUNAR_0": "{0} ran out of time!",
+    "PLAYER_DEATH_QUOTE_EXTRAITEMSLUNAR_1_2P": "You melted away.",
+    "PLAYER_DEATH_QUOTE_EXTRAITEMSLUNAR_1": "{0} melted away.",
+    "PLAYER_DEATH_QUOTE_EXTRAITEMSLUNAR_2_2P": "The candle that burns twice as bright...",
+    "PLAYER_DEATH_QUOTE_EXTRAITEMSLUNAR_2": "{0} was snuffed out.",
+    "PLAYER_DEATH_QUOTE_EXTRAITEMSLUNAR_3_2P": "Time to pay up.",
+    "PLAYER_DEATH_QUOTE_EXTRAITEMSLUNAR_3": "{0}'s debts have been paid.",
+    "PLAYER_DEATH_QUOTE_EXTRAITEMSLUNAR_4_2P": "You're too slow!",
+    "PLAYER_DEATH_QUOTE_EXTRAITEMSLUNAR_4": "{0} wasn't fast enough!",
+    "PLAYER_DEATH_QUOTE_EXTRAITEMSLUNAR_5_2P": "Ask not for whom the bell tolls.",
+    "PLAYER_DEATH_QUOTE_EXTRAITEMSLUNAR_5": "The bell tolls for {0}.",
   }
 }

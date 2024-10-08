@@ -3,12 +3,12 @@
     "EXTRAITEMSLUNAR": "Impermanence",
     "ITEM_EXTRAITEMSLUNAR_NAME": "Impermanence",
     "ITEM_EXTRAITEMSLUNAR_PICKUP": "Gain a chance to double items from chests... <style=cDeath>BUT you have a time limit each stage.</style>.",
-    "ITEM_EXTRAITEMSLUNAR_DESC": "Chests have a <style=cIsUtility>20%</style> <style=cStack>(+20% per stack)</style> to grant <style=cIsUtility>double items</style>. After <style=cDeath>12</style> minutes on a stage, <style=cStack>(-20% per stack)</style>, <style=cDeath>you die</style>.",
+    "ITEM_EXTRAITEMSLUNAR_DESC": "Before defeating the stage boss, chests have a <style=cIsUtility>20%</style> <style=cStack>(+20% per stack)</style> to grant <style=cIsUtility>double items</style>. After <style=cDeath>12</style> minutes on a stage without defeating the boss, <style=cStack>(-20% per stack)</style>, <style=cDeath>you die</style>.",
     "ITEM_EXTRAITEMSLUNAR_LORE": "
 
     Servitude is not without its benefits. I can grant you many things. 
 
-    Shall we make a deal?"
+    Shall we make a deal?",
 
     //[DEATH QUOTES]
     "PLAYER_DEATH_QUOTE_EXTRAITEMSLUNAR_0_2P": "Time's up!",
@@ -23,5 +23,9 @@
     "PLAYER_DEATH_QUOTE_EXTRAITEMSLUNAR_4": "{0} wasn't fast enough!",
     "PLAYER_DEATH_QUOTE_EXTRAITEMSLUNAR_5_2P": "Ask not for whom the bell tolls.",
     "PLAYER_DEATH_QUOTE_EXTRAITEMSLUNAR_5": "The bell tolls for {0}.",
+
+
+    //[MISC]
+    "IMPERMANENCE_TIMER_FLAVOUR": "Time To Live",
   }
 }

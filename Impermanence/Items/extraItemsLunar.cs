@@ -1,22 +1,13 @@
 ﻿using RoR2;
-using RoR2.Navigation;
 using R2API;
-using R2API.Utils;
-using R2API.Networking;
-using R2API.Networking.Interfaces;
 using UnityEngine;
 using UnityEngine.Networking;
-using Mono.Cecil.Cil;
-using MonoMod.Cil;
 using System.Collections.Generic;
 using System.Linq;
-using System.Collections.ObjectModel;
-using RoR2.UI;
-using UnityEngine.Rendering.PostProcessing;
-using UnityEngine.UI;
 using UnityEngine.AddressableAssets;
-using RoR2.Projectile;
 using System;
+using RoR2.UI;
+using UnityEngine.UI;
 
 namespace Impermanence
 {
@@ -24,7 +15,8 @@ namespace Impermanence
     {
         public static ItemDef itemDef;
         // public static BuffDef chestBuff;
-
+        private static GameObject hudTimer;
+        private static RoR2.Audio.LoopSoundDef countDownSound;
         public static ConfigurableValue<bool> isEnabled = new(
             "Item: Impermanence",
             "Enabled",
@@ -38,7 +30,7 @@ namespace Impermanence
         public static ConfigurableValue<float> baseTimer = new(
             "Item: Impermanence",
             "Base Time Limit",
-            730f,
+            720f,
             "The time limit with one stack of impermanence.",
             new List<string>()
             {
@@ -69,9 +61,6 @@ namespace Impermanence
         public static float bonusChancePercent = bonusChancePerStack/100f;
         public static float timerDecreasePercent = timePerStack/100f;
 
-
-        public static DamageAPI.ModdedDamageType damageType;
-
         internal static void Init()
         {
             Debug.Log("Initializing Impermanence Item");
@@ -100,14 +89,25 @@ namespace Impermanence
                 ItemTag.OnStageBeginEffect
             };
 
-            
+            ItemDef RandomlyLunar = LegacyResourcesAPI.Load<ItemDef>("ItemDefs/RandomlyLunar");
             itemDef.pickupIconSprite = Addressables.LoadAssetAsync<Sprite>("RoR2/DLC1/FragileDamageBonus/texDelicateWatchIcon.png").WaitForCompletion();
+            // itemDef.pickupModelPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/DLC1/FragileDamageBonus/DisplayDelicateWatch.prefab").WaitForCompletion();
             itemDef.pickupModelPrefab = ImpermanencePlugin.AssetBundle.LoadAsset<GameObject>("Assets/Items/candle/impermanence.prefab");
+            
+            ModelPanelParameters ModelParams = itemDef.pickupModelPrefab.AddComponent<ModelPanelParameters>();
+
+            ModelParams.minDistance = 5;
+            ModelParams.maxDistance = 10;
+            // itemDef.pickupModelPrefab.GetComponent<ModelPanelParameters>().cameraPositionTransform.localPosition = new Vector3(1, 1, -0.3f); 
+            // itemDef.pickupModelPrefab.GetComponent<ModelPanelParameters>().focusPointTransform.localPosition = new Vector3(0, 1, -0.3f);
+            // itemDef.pickupModelPrefab.GetComponent<ModelPanelParameters>().focusPointTransform.localEulerAngles = new Vector3(0, 0, 0);
+            
+            
 
             itemDef.canRemove = true;
             itemDef.hidden = false;
 
-            ItemDisplayRuleDict displayRules = new ItemDisplayRuleDict(null);
+            ItemDisplayRuleDict displayRules = makeDisplayRules();
             ItemAPI.Add(new CustomItem(itemDef, displayRules));
 
             Debug.Log("Impermanence Initialized");
@@ -121,6 +121,17 @@ namespace Impermanence
             // chestBuff.isDebuff = false;
             // chestBuff.isCooldown = false;
 
+            //HUD//
+            hudTimer = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/UI/HudCountdownPanel.prefab").WaitForCompletion();
+            hudTimer.transform.Find("Juice/Container/CountdownTitleLabel").GetComponent<LanguageTextMeshController>().token = "IMPERMANENCE_TIMER_FLAVOUR";
+            var col = new Color32(0, 157, 255, 255);
+            hudTimer.transform.Find("Juice/Container/Border").GetComponent<Image>().color = col;
+            hudTimer.transform.Find("Juice/Container/CountdownLabel").GetComponent<HGTextMeshProUGUI>().color = col;
+
+            //SOUND//
+            countDownSound = Addressables.LoadAssetAsync<RoR2.Audio.LoopSoundDef>("RoR2/DLC1/GameModes/InfiniteTowerRun/InfiniteTowerAssets/lsdInfiniteTowerNextWaveTimer.asset").WaitForCompletion();
+            Log.Debug(countDownSound.startSoundName+", "+countDownSound.name);
+            
             Hooks();
         }
 
@@ -128,8 +139,8 @@ namespace Impermanence
         {
             On.RoR2.CharacterBody.OnInventoryChanged += (orig, self) =>
             {
-                orig(self);
                 self.AddItemBehavior<ImpermanenceBehaviour>(self.inventory.GetItemCount(itemDef));
+                orig(self);
             };
 
             On.RoR2.PurchaseInteraction.OnInteractionBegin += (orig, self, activator) =>
@@ -155,7 +166,7 @@ namespace Impermanence
                     if (multiplier > 1)
                     {   
                         Log.Debug("multiplying items");
-                        // Util.PlaySound(RoR2.DLC2Content.Items.LowerPricedChests., body.gameObject);
+                        Util.PlaySound("item_proc_lowerPricedChest", self.gameObject);
 
                         //Flag to be doubled
                         ImpermanenceMultiplyItemBehaviour multiplyFlag = self.gameObject.AddComponent<ImpermanenceMultiplyItemBehaviour>();
@@ -167,6 +178,8 @@ namespace Impermanence
 
             On.RoR2.ChestBehavior.ItemDrop +=  (orig, self) =>
              {
+                //The effect is multiplicative, so we want it to run AFTER everything else
+                orig(self);
                 PurchaseInteraction purchaseInteraction = self.gameObject.GetComponent<PurchaseInteraction>();
                 if (purchaseInteraction)
                 {
@@ -178,10 +191,11 @@ namespace Impermanence
                         self.dropCount *= component.multiplier;
                     }
                 }
-                orig(self);
+                
             };
 
             GenericGameEvents.OnPlayerCharacterDeath += GenericGameEvents_OnPlayerCharacterDeath;
+            
         }
 
         public static string[] impermanenceDeathQuoteTokens = (from i in Enumerable.Range(0, 5) select "PLAYER_DEATH_QUOTE_EXTRAITEMSLUNAR_" + TextSerialization.ToStringInvariant(i)).ToArray();
@@ -200,79 +214,80 @@ namespace Impermanence
 
         public class ImpermanenceBehaviour : CharacterBody.ItemBehavior
         {
-
             public float countdownTimer = baseTimer;
             public bool diedFromTimer = false;
 
-            public bool countdownCalculated = false;
-            public float countdownCalculationTimer = 0.5f;
-            public float countdownCalculationInterval = 4f;
-
+            private bool bossDefeated = false;
             public bool countdown10Played = false;
             public uint countdown10ID;
+            public HUD bodyHud;
+            public GameObject hudPanel = null;
 
             public void Start()
             {
+                foreach (HUD hud in HUD.readOnlyInstanceList)
+                {
+                    if (hud.targetBodyObject == body.gameObject)
+                    {
+                        bodyHud = hud;
+                    }
+                }
+                
                 //HOOKS//
                 body.onInventoryChanged += Body_onInventoryChanged;
                 Stage.onStageStartGlobal += Stage_onStageStartGlobal;
-
-                diedFromTimer = false;
+                On.RoR2.BossGroup.OnDefeatedServer += BossGroup_onDefeatedServer;
             }
 
             public void Update()
             {
-
-
-                if (!countdownCalculated)
+                
+                if (stack > 0 && !bossDefeated)
                 {
-                    countdownCalculationTimer -= Time.deltaTime;
-                    if (countdownCalculationTimer <= 0)
+                    countdownTimer -= Time.deltaTime;
+
+                    if (!diedFromTimer)
                     {
-                        countdownCalculated = true;
-                        if (countdownCalculated)
+                        SetHudCountdownEnabled(true);
+                        SetCountdownTime(countdownTimer);
+
+                        if (countdownTimer <= 0)
                         {
-                            UpdateItemBasedInfo();
-                            countdownCalculationTimer += countdownCalculationInterval;
-                        }
-                    }
-                }
-
-                else
-                {
-                    if (stack > 0)
-                    {
-                        countdownTimer -= Time.deltaTime;
-
-
-                        if (countdownTimer <= 10f && !countdown10Played)
-                        {
-                            countdown10Played = true;
-                            //countdown10ID = Util.PlaySound("MysticsItems_Play_riftLens_countdown_10", body.gameObject);
-                        }
-
-                        if (countdownTimer <= 0 && !diedFromTimer)
-                        {
+                            SetCountdownTime(0f);
                             diedFromTimer = true;
                             if (NetworkServer.active) body.healthComponent.Suicide();
                         }
                     }
-                    else
+
+                    //Make things more intense
+                    if (countdownTimer <= 10f && !countdown10Played)
                     {
-                        // body.RemoveBuff(chestBuff);
-                        if (countdown10Played)
-                        {
-                            countdown10Played = false;
-                            ResetTimer();
-                            //AkSoundEngine.StopPlayingID(countdown10ID);
-                        }
+                        countdown10Played = true;
+                        countdown10ID = Util.PlaySound(countDownSound.name, body.gameObject);
+                    }
+
+                }
+                else
+                {
+
+                    SetHudCountdownEnabled(false);
+                    ResetTimer();
+
+                    // body.RemoveBuff(chestBuff);
+                    if (countdown10Played)
+                    {
+                        countdown10Played = false;
+                        AkSoundEngine.StopPlayingID(countdown10ID);
                     }
                 }
+                
             }
 
             public void OnDestroy()
             {
                 if (body) body.onInventoryChanged -= Body_onInventoryChanged;
+                Stage.onStageStartGlobal -= Stage_onStageStartGlobal;
+                On.RoR2.BossGroup.OnDefeatedServer -= BossGroup_onDefeatedServer;
             }
 
             public void Body_onInventoryChanged()
@@ -283,24 +298,42 @@ namespace Impermanence
             public void Stage_onStageStartGlobal(Stage stage)
             {
                 ResetTimer();
+                bossDefeated = false;
+            }
+
+            public void BossGroup_onDefeatedServer(On.RoR2.BossGroup.orig_OnDefeatedServer orig, BossGroup self)
+            {
+                Log.Debug(self.name);
+                if (self.name != "SuperRoboBallBoss")
+                {
+                    bossDefeated = true;
+                }
+                orig(self);
             }
 
             public void UpdateItemBasedInfo()
             {
+                Log.Debug("you have this many candles: " +stack);
                 if (!body) return;
+                if (stack < 1) 
+                {
+                    countdownTimer = baseTimer;
+                    return;
+                }
+                Log.Debug("Changing timer");
+
                 countdownTimer = Mathf.Min(baseTimer * Mathf.Pow( 1 - timerDecreasePercent, stack-1), countdownTimer); // Cut the timer down, unless the timer is already low enough
             }
 
             public void ResetTimer()
             {
                 countdownTimer = baseTimer;
-                countdownCalculated = false;
-                countdownCalculationTimer = 0.5f;
             }
 
             public int TryDoubleItem()
             {
-                if (!body) return 1;
+                //No bonus after the boss is done
+                if (!body || bossDefeated) return 1;
 
                 float proc = bonusChancePercent * stack;
 
@@ -310,6 +343,32 @@ namespace Impermanence
                 
                 Debug.Log("TryDoubleItem(): multiplier=" + (bonus+1) + " proc=" + proc);
                 return bonus + 1;
+            }
+
+            public void SetHudCountdownEnabled(bool shouldEnableCountdownPanel)
+            {   
+                //thinking about this gives me a headache
+                if ((hudPanel != null) != shouldEnableCountdownPanel)
+                {
+                    if (shouldEnableCountdownPanel)
+                    {
+                        RectTransform rectTransform = bodyHud.GetComponent<ChildLocator>().FindChild("TopCenterCluster") as RectTransform;
+                        if (rectTransform)
+                        {
+                            hudPanel = Instantiate<GameObject>(hudTimer, rectTransform);
+                        }
+                    }
+                    else
+                    {  
+                        Destroy(hudPanel);
+                        hudPanel = null;
+                    }
+                }
+            }
+
+            public void SetCountdownTime(double secondsRemaining)
+            {
+                    hudPanel.GetComponent<TimerText>().seconds = secondsRemaining;
             }
 
             public void OnEnable()
@@ -325,6 +384,249 @@ namespace Impermanence
         public class ImpermanenceMultiplyItemBehaviour : MonoBehaviour
         {
             public int multiplier;
+        }
+
+        public static ItemDisplayRuleDict makeDisplayRules()
+        {
+            ItemDisplayRule[] DefaultRules = new ItemDisplayRule[]
+            {
+                        new ItemDisplayRule
+                        {
+                            ruleType = ItemDisplayRuleType.ParentedPrefab,
+                            followerPrefab = itemDef.pickupModelPrefab,
+                            childName = "Head",
+                            localPos = new Vector3(0f, 0.43f, 0f),
+                            localAngles = new Vector3(0f,0f,0f),
+                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                        },
+            };
+            ItemDisplayRule[] CommandoRules = new ItemDisplayRule[]
+            {
+                        new ItemDisplayRule
+                        {
+                            ruleType = ItemDisplayRuleType.ParentedPrefab,
+                            followerPrefab = itemDef.pickupModelPrefab,
+                            childName = "Head",
+                            localPos = new Vector3(0f, 0.43f, 0f),
+                            localAngles = new Vector3(0f,0f,0f),
+                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                        },
+            };
+            ItemDisplayRule[] HuntressRules = new ItemDisplayRule[]
+            {
+                        new ItemDisplayRule
+                        {
+                            ruleType = ItemDisplayRuleType.ParentedPrefab,
+                            followerPrefab = itemDef.pickupModelPrefab,
+                            childName = "Head",
+                            localPos = new Vector3(0f, 0.35f, -0.09f),
+                            localAngles = new Vector3(345f,0f,0f),
+                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                        },
+            };
+            ItemDisplayRule[] BanditRules = new ItemDisplayRule[]
+            {
+                        new ItemDisplayRule
+                        {
+                            ruleType = ItemDisplayRuleType.ParentedPrefab,
+                            followerPrefab = itemDef.pickupModelPrefab,
+                            childName = "Head",
+                            localPos = new Vector3(0f, 0.23f, 0f),
+                            localAngles = new Vector3(355f,0f,0f),
+                            localScale = new Vector3(0.04f,0.04f,0.04f),
+                        },
+            };
+            ItemDisplayRule[] MULTRules = new ItemDisplayRule[]
+            {
+                        new ItemDisplayRule
+                        {
+                            ruleType = ItemDisplayRuleType.ParentedPrefab,
+                            followerPrefab = itemDef.pickupModelPrefab,
+                            childName = "Head",
+                            localPos = new Vector3(0f, 0.43f, 0f),
+                            localAngles = new Vector3(0f,0f,0f),
+                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                        },
+            };
+            ItemDisplayRule[] EngiRules = new ItemDisplayRule[]
+            {
+                        new ItemDisplayRule
+                        {
+                            ruleType = ItemDisplayRuleType.ParentedPrefab,
+                            followerPrefab = itemDef.pickupModelPrefab,
+                            childName = "Head",
+                            localPos = new Vector3(0f, 0.43f, 0f),
+                            localAngles = new Vector3(0f,0f,0f),
+                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                        },
+            };
+            ItemDisplayRule[] ArtiRules = new ItemDisplayRule[]
+            {
+                        new ItemDisplayRule
+                        {
+                            ruleType = ItemDisplayRuleType.ParentedPrefab,
+                            followerPrefab = itemDef.pickupModelPrefab,
+                            childName = "Head",
+                            localPos = new Vector3(0f, 0.43f, 0f),
+                            localAngles = new Vector3(0f,0f,0f),
+                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                        },
+            };
+            ItemDisplayRule[] MercRules = new ItemDisplayRule[]
+            {
+                        new ItemDisplayRule
+                        {
+                            ruleType = ItemDisplayRuleType.ParentedPrefab,
+                            followerPrefab = itemDef.pickupModelPrefab,
+                            childName = "Head",
+                            localPos = new Vector3(0f, 0.43f, 0f),
+                            localAngles = new Vector3(0f,0f,0f),
+                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                        },
+            };
+            ItemDisplayRule[] REXRules = new ItemDisplayRule[]
+            {
+                        new ItemDisplayRule
+                        {
+                            ruleType = ItemDisplayRuleType.ParentedPrefab,
+                            followerPrefab = itemDef.pickupModelPrefab,
+                            childName = "Head",
+                            localPos = new Vector3(0f, 0.43f, 0f),
+                            localAngles = new Vector3(0f,0f,0f),
+                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                        },
+            };
+            ItemDisplayRule[] LoaderRules = new ItemDisplayRule[]
+            {
+                        new ItemDisplayRule
+                        {
+                            ruleType = ItemDisplayRuleType.ParentedPrefab,
+                            followerPrefab = itemDef.pickupModelPrefab,
+                            childName = "Head",
+                            localPos = new Vector3(0f, 0.43f, 0f),
+                            localAngles = new Vector3(0f,0f,0f),
+                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                        },
+            };
+            ItemDisplayRule[] AcridRules = new ItemDisplayRule[]
+            {
+                        new ItemDisplayRule
+                        {
+                            ruleType = ItemDisplayRuleType.ParentedPrefab,
+                            followerPrefab = itemDef.pickupModelPrefab,
+                            childName = "Head",
+                            localPos = new Vector3(0f, 0.43f, 0f),
+                            localAngles = new Vector3(0f,0f,0f),
+                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                        },
+            };
+            ItemDisplayRule[] CapRules = new ItemDisplayRule[]
+            {
+                        new ItemDisplayRule
+                        {
+                            ruleType = ItemDisplayRuleType.ParentedPrefab,
+                            followerPrefab = itemDef.pickupModelPrefab,
+                            childName = "Head",
+                            localPos = new Vector3(0f, 0.43f, 0f),
+                            localAngles = new Vector3(0f,0f,0f),
+                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                        },
+            };
+            ItemDisplayRule[] RailgunnerRules = new ItemDisplayRule[]
+            {
+                        new ItemDisplayRule
+                        {
+                            ruleType = ItemDisplayRuleType.ParentedPrefab,
+                            followerPrefab = itemDef.pickupModelPrefab,
+                            childName = "Head",
+                            localPos = new Vector3(0f, 0.43f, 0f),
+                            localAngles = new Vector3(0f,0f,0f),
+                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                        },
+            };
+            ItemDisplayRule[] ViendRules = new ItemDisplayRule[]
+            {
+                        new ItemDisplayRule
+                        {
+                            ruleType = ItemDisplayRuleType.ParentedPrefab,
+                            followerPrefab = itemDef.pickupModelPrefab,
+                            childName = "Head",
+                            localPos = new Vector3(0f, 0.43f, 0f),
+                            localAngles = new Vector3(0f,0f,0f),
+                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                        },
+            };
+            ItemDisplayRule[] SeekerRules = new ItemDisplayRule[]
+            {
+                        new ItemDisplayRule
+                        {
+                            ruleType = ItemDisplayRuleType.ParentedPrefab,
+                            followerPrefab = itemDef.pickupModelPrefab,
+                            childName = "Head",
+                            localPos = new Vector3(0f, 0.43f, 0f),
+                            localAngles = new Vector3(0f,0f,0f),
+                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                        },
+            };
+            ItemDisplayRule[] CHEFRules = new ItemDisplayRule[]
+            {
+                        new ItemDisplayRule
+                        {
+                            ruleType = ItemDisplayRuleType.ParentedPrefab,
+                            followerPrefab = itemDef.pickupModelPrefab,
+                            childName = "Head",
+                            localPos = new Vector3(0f, 0.43f, 0f),
+                            localAngles = new Vector3(0f,0f,0f),
+                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                        },
+            };
+            ItemDisplayRule[] SonRules = new ItemDisplayRule[]
+            {
+                        new ItemDisplayRule
+                        {
+                            ruleType = ItemDisplayRuleType.ParentedPrefab,
+                            followerPrefab = itemDef.pickupModelPrefab,
+                            childName = "Head",
+                            localPos = new Vector3(0f, 0.43f, 0f),
+                            localAngles = new Vector3(0f,0f,0f),
+                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                        },
+            };
+
+            ItemDisplayRule[] ScavRules = new ItemDisplayRule[]
+            {
+                        new ItemDisplayRule
+                        {
+                            ruleType = ItemDisplayRuleType.ParentedPrefab,
+                            followerPrefab = itemDef.pickupModelPrefab,
+                            childName = "Head",
+                            localPos = new Vector3(2.87f, 6.93f, -2.89f),
+                            localAngles = new Vector3(35f,0f,0f),
+                            localScale = new Vector3(0.5f,0.75f,0.5f),
+                        },
+            };
+
+            ItemDisplayRuleDict DisplayRules = new ItemDisplayRuleDict(DefaultRules);
+            DisplayRules.Add("CommandoBody", CommandoRules);
+            DisplayRules.Add("HuntressBody", HuntressRules);
+            DisplayRules.Add("Bandit2Body", BanditRules);
+            DisplayRules.Add("ToolbotBody", MULTRules);
+            DisplayRules.Add("EngiBody", EngiRules);
+            DisplayRules.Add("MageBody", ArtiRules);
+            DisplayRules.Add("MercBody", MercRules);
+            DisplayRules.Add("TreebotBody", REXRules);
+            DisplayRules.Add("LoaderBody", LoaderRules);
+            DisplayRules.Add("CrocoBody", AcridRules);
+            DisplayRules.Add("CaptainBody", CapRules);
+            DisplayRules.Add("RailgunnerBody", RailgunnerRules);
+            DisplayRules.Add("VoidSurvivorBody", ViendRules);
+            DisplayRules.Add("SeekerBody", SeekerRules);
+            DisplayRules.Add("ChefBody", CHEFRules);
+            DisplayRules.Add("FalseSonBody", SonRules);
+
+            DisplayRules.Add("ScavBody", ScavRules);
+
+            return DisplayRules;
         }
     }
 }

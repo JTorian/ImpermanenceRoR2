@@ -16,7 +16,6 @@ namespace Impermanence
         public static ItemDef itemDef;
         // public static BuffDef chestBuff;
         private static GameObject hudTimer;
-        private static RoR2.Audio.LoopSoundDef countDownSound;
         public static ConfigurableValue<bool> isEnabled = new(
             "Item: Impermanence",
             "Enabled",
@@ -30,7 +29,7 @@ namespace Impermanence
         public static ConfigurableValue<float> baseTimer = new(
             "Item: Impermanence",
             "Base Time Limit",
-            720f,
+            600f,
             "The time limit with one stack of impermanence.",
             new List<string>()
             {
@@ -50,7 +49,7 @@ namespace Impermanence
         public static ConfigurableValue<float> timePerStack = new(
             "Item: Impermanence",
             "Time Decrease per Stack",
-            20f,
+            15f,
             "The decrease in remaining time as a percentage.",
             new List<string>()
             {
@@ -89,10 +88,8 @@ namespace Impermanence
                 ItemTag.OnStageBeginEffect
             };
 
-            ItemDef RandomlyLunar = LegacyResourcesAPI.Load<ItemDef>("ItemDefs/RandomlyLunar");
-            itemDef.pickupIconSprite = Addressables.LoadAssetAsync<Sprite>("RoR2/DLC1/FragileDamageBonus/texDelicateWatchIcon.png").WaitForCompletion();
-            // itemDef.pickupModelPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/DLC1/FragileDamageBonus/DisplayDelicateWatch.prefab").WaitForCompletion();
-            itemDef.pickupModelPrefab = ImpermanencePlugin.AssetBundle.LoadAsset<GameObject>("Assets/Items/candle/impermanence.prefab");
+            itemDef.pickupIconSprite = ImpermanencePlugin.AssetBundle.LoadAsset<Sprite>("Assets/Items/impermanence/Icon.png");
+            itemDef.pickupModelPrefab = ImpermanencePlugin.AssetBundle.LoadAsset<GameObject>("Assets/Items/impermanence/Model.prefab");
             
             ModelPanelParameters ModelParams = itemDef.pickupModelPrefab.AddComponent<ModelPanelParameters>();
 
@@ -128,8 +125,6 @@ namespace Impermanence
             hudTimer.transform.Find("Juice/Container/Border").GetComponent<Image>().color = col;
             hudTimer.transform.Find("Juice/Container/CountdownLabel").GetComponent<HGTextMeshProUGUI>().color = col;
 
-            //SOUND//
-            countDownSound = Addressables.LoadAssetAsync<RoR2.Audio.LoopSoundDef>("RoR2/DLC1/GameModes/InfiniteTowerRun/InfiniteTowerAssets/lsdInfiniteTowerNextWaveTimer.asset").WaitForCompletion();
             
             Hooks();
         }
@@ -265,7 +260,7 @@ namespace Impermanence
                             SetCountdownTime(0f);
                             diedFromTimer = true;
                             if (NetworkServer.active) body.healthComponent.Suicide();
-                            
+
                             //Make sure we don't have to hear the countdown forever
                             if (countdown10Played)
                             {
@@ -311,8 +306,8 @@ namespace Impermanence
 
             public void BossGroup_onDefeatedServer(On.RoR2.BossGroup.orig_OnDefeatedServer orig, BossGroup self)
             {
-                Log.Debug(self.name);
-                if (self.name != "SuperRoboBallBoss")
+                //Ignore minibosses
+                if (self.name != "SuperRoboBallEncounter" || self.name != "ShadowCloneEncounter(Clone)")
                 {
                     bossDefeated = true;
                 }

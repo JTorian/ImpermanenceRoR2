@@ -36,8 +36,11 @@ namespace Impermanence
             pluginInfo = Info;
             AssetBundle = AssetBundle.LoadFromFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(pluginInfo.Location), "impermanenceassetbundle"));
 
-            GenericGameEvents.Init();
-            ExtraItemsLunar.Init();
+            if (ExtraItemsLunar.isEnabled)
+            {
+                GenericGameEvents.Init();
+                ExtraItemsLunar.Init();
+            }
         }
 
         //TEST

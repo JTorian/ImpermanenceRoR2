@@ -130,7 +130,6 @@ namespace Impermanence
 
             //SOUND//
             countDownSound = Addressables.LoadAssetAsync<RoR2.Audio.LoopSoundDef>("RoR2/DLC1/GameModes/InfiniteTowerRun/InfiniteTowerAssets/lsdInfiniteTowerNextWaveTimer.asset").WaitForCompletion();
-            Log.Debug(countDownSound.startSoundName+", "+countDownSound.name);
             
             Hooks();
         }
@@ -166,7 +165,8 @@ namespace Impermanence
                     if (multiplier > 1)
                     {   
                         Log.Debug("multiplying items");
-                        Util.PlaySound("item_proc_lowerPricedChest", self.gameObject);
+                        Util.PlaySound("Play_item_proc_lowerPricedChest", body.gameObject);
+                        
 
                         //Flag to be doubled
                         ImpermanenceMultiplyItemBehaviour multiplyFlag = self.gameObject.AddComponent<ImpermanenceMultiplyItemBehaviour>();
@@ -178,8 +178,7 @@ namespace Impermanence
 
             On.RoR2.ChestBehavior.ItemDrop +=  (orig, self) =>
              {
-                //The effect is multiplicative, so we want it to run AFTER everything else
-                orig(self);
+
                 PurchaseInteraction purchaseInteraction = self.gameObject.GetComponent<PurchaseInteraction>();
                 if (purchaseInteraction)
                 {
@@ -191,6 +190,7 @@ namespace Impermanence
                         self.dropCount *= component.multiplier;
                     }
                 }
+                orig(self);
                 
             };
 
@@ -245,27 +245,35 @@ namespace Impermanence
                 if (stack > 0 && !bossDefeated)
                 {
                     countdownTimer -= Time.deltaTime;
-
+                    
                     if (!diedFromTimer)
                     {
                         SetHudCountdownEnabled(true);
                         SetCountdownTime(countdownTimer);
 
+                        //Make things more intense
+                        if (countdownTimer <= 10f && !countdown10Played)
+                        {
+                            countdown10Played = true;
+                            countdown10ID = Util.PlaySound("Play_UI_arenaMode_coundown_loop", body.gameObject);
+                            
+                        }
+
+                        //Die
                         if (countdownTimer <= 0)
                         {
                             SetCountdownTime(0f);
                             diedFromTimer = true;
                             if (NetworkServer.active) body.healthComponent.Suicide();
+                            
+                            //Make sure we don't have to hear the countdown forever
+                            if (countdown10Played)
+                            {
+                                countdown10Played = false;
+                                AkSoundEngine.StopPlayingID(countdown10ID);
+                            }
                         }
                     }
-
-                    //Make things more intense
-                    if (countdownTimer <= 10f && !countdown10Played)
-                    {
-                        countdown10Played = true;
-                        countdown10ID = Util.PlaySound(countDownSound.name, body.gameObject);
-                    }
-
                 }
                 else
                 {
@@ -313,14 +321,12 @@ namespace Impermanence
 
             public void UpdateItemBasedInfo()
             {
-                Log.Debug("you have this many candles: " +stack);
                 if (!body) return;
                 if (stack < 1) 
                 {
                     countdownTimer = baseTimer;
                     return;
                 }
-                Log.Debug("Changing timer");
 
                 countdownTimer = Mathf.Min(baseTimer * Mathf.Pow( 1 - timerDecreasePercent, stack-1), countdownTimer); // Cut the timer down, unless the timer is already low enough
             }
@@ -443,9 +449,9 @@ namespace Impermanence
                             ruleType = ItemDisplayRuleType.ParentedPrefab,
                             followerPrefab = itemDef.pickupModelPrefab,
                             childName = "Head",
-                            localPos = new Vector3(0f, 0.43f, 0f),
-                            localAngles = new Vector3(0f,0f,0f),
-                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                            localPos = new Vector3(-1.44F, 3.71F, 0.37F),
+                            localAngles = new Vector3(55F, 0F, 0F),
+                            localScale = new Vector3(0.2F, 0.2F, 0.2F)
                         },
             };
             ItemDisplayRule[] EngiRules = new ItemDisplayRule[]
@@ -454,10 +460,10 @@ namespace Impermanence
                         {
                             ruleType = ItemDisplayRuleType.ParentedPrefab,
                             followerPrefab = itemDef.pickupModelPrefab,
-                            childName = "Head",
-                            localPos = new Vector3(0f, 0.43f, 0f),
-                            localAngles = new Vector3(0f,0f,0f),
-                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                            childName = "MuzzleRight",
+                            localPos = new Vector3(-0.1725F, -0.17242F, -0.29035F),
+                            localAngles = new Vector3(315F, 270F, 180F),
+                            localScale = new Vector3(0.031F, 0.03F, 0.031F)
                         },
             };
             ItemDisplayRule[] ArtiRules = new ItemDisplayRule[]
@@ -466,10 +472,10 @@ namespace Impermanence
                         {
                             ruleType = ItemDisplayRuleType.ParentedPrefab,
                             followerPrefab = itemDef.pickupModelPrefab,
-                            childName = "Head",
-                            localPos = new Vector3(0f, 0.43f, 0f),
-                            localAngles = new Vector3(0f,0f,0f),
-                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                            childName = "Chest",
+                            localPos = new Vector3(-0.11179F, 0.33944F, -0.17685F),
+                            localAngles = new Vector3(10F, 0F, 0F),
+                            localScale = new Vector3(0.05F, 0.05F, 0.05F)
                         },
             };
             ItemDisplayRule[] MercRules = new ItemDisplayRule[]
@@ -478,10 +484,10 @@ namespace Impermanence
                         {
                             ruleType = ItemDisplayRuleType.ParentedPrefab,
                             followerPrefab = itemDef.pickupModelPrefab,
-                            childName = "Head",
-                            localPos = new Vector3(0f, 0.43f, 0f),
-                            localAngles = new Vector3(0f,0f,0f),
-                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                            childName = "Chest",
+                            localPos = new Vector3(0.00322F, 0.28508F, -0.22849F),
+                            localAngles = new Vector3(0F, 90F, 0F),
+                            localScale = new Vector3(0.02F, 0.02F, 0.02F)
                         },
             };
             ItemDisplayRule[] REXRules = new ItemDisplayRule[]
@@ -490,10 +496,10 @@ namespace Impermanence
                         {
                             ruleType = ItemDisplayRuleType.ParentedPrefab,
                             followerPrefab = itemDef.pickupModelPrefab,
-                            childName = "Head",
-                            localPos = new Vector3(0f, 0.43f, 0f),
-                            localAngles = new Vector3(0f,0f,0f),
-                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                            childName = "FlowerBase",
+                            localPos = new Vector3(-0.66143F, 0.72885F, 0.48302F),
+                            localAngles = new Vector3(0F, 180F, 0F),
+                            localScale = new Vector3(0.05F, 0.05F, 0.05F)
                         },
             };
             ItemDisplayRule[] LoaderRules = new ItemDisplayRule[]
@@ -502,10 +508,10 @@ namespace Impermanence
                         {
                             ruleType = ItemDisplayRuleType.ParentedPrefab,
                             followerPrefab = itemDef.pickupModelPrefab,
-                            childName = "Head",
-                            localPos = new Vector3(0f, 0.43f, 0f),
-                            localAngles = new Vector3(0f,0f,0f),
-                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                            childName = "MechBase",
+                            localPos = new Vector3(0.15849F, 0.38956F, 0.42917F),
+                            localAngles = new Vector3(0F, 180F, 0F),
+                            localScale = new Vector3(0.02F, 0.02F, 0.02F)
                         },
             };
             ItemDisplayRule[] AcridRules = new ItemDisplayRule[]
@@ -514,10 +520,10 @@ namespace Impermanence
                         {
                             ruleType = ItemDisplayRuleType.ParentedPrefab,
                             followerPrefab = itemDef.pickupModelPrefab,
-                            childName = "Head",
-                            localPos = new Vector3(0f, 0.43f, 0f),
-                            localAngles = new Vector3(0f,0f,0f),
-                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                            childName = "SpineChest1",
+                            localPos = new Vector3(1.61135F, 3.34974F, 5.01534F),
+                            localAngles = new Vector3(0F, 0F, 0F),
+                            localScale = new Vector3(0.2F, 0.2F, 0.2F)
                         },
             };
             ItemDisplayRule[] CapRules = new ItemDisplayRule[]
@@ -526,10 +532,10 @@ namespace Impermanence
                         {
                             ruleType = ItemDisplayRuleType.ParentedPrefab,
                             followerPrefab = itemDef.pickupModelPrefab,
-                            childName = "Head",
-                            localPos = new Vector3(0f, 0.43f, 0f),
-                            localAngles = new Vector3(0f,0f,0f),
-                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                            childName = "ClavicleL",
+                            localPos = new Vector3(-0.00551F, 0.00861F, -0.13122F),
+                            localAngles = new Vector3(270F, 0F, 0F),
+                            localScale = new Vector3(0.05F, 0.05F, 0.05F)
                         },
             };
             ItemDisplayRule[] RailgunnerRules = new ItemDisplayRule[]
@@ -538,10 +544,10 @@ namespace Impermanence
                         {
                             ruleType = ItemDisplayRuleType.ParentedPrefab,
                             followerPrefab = itemDef.pickupModelPrefab,
-                            childName = "Head",
-                            localPos = new Vector3(0f, 0.43f, 0f),
-                            localAngles = new Vector3(0f,0f,0f),
-                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                            childName = "Backpack",
+                            localPos = new Vector3(-0.16635F, 0.43282F, 0.00679F),
+                            localAngles = new Vector3(0F, 0F, 0F),
+                            localScale = new Vector3(0.05F, 0.05F, 0.05F)
                         },
             };
             ItemDisplayRule[] ViendRules = new ItemDisplayRule[]
@@ -550,10 +556,10 @@ namespace Impermanence
                         {
                             ruleType = ItemDisplayRuleType.ParentedPrefab,
                             followerPrefab = itemDef.pickupModelPrefab,
-                            childName = "Head",
-                            localPos = new Vector3(0f, 0.43f, 0f),
-                            localAngles = new Vector3(0f,0f,0f),
-                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                            childName = "Chest",
+                            localPos = new Vector3(-0.13114F, 0.28689F, -0.30823F),
+                            localAngles = new Vector3(290F, 0F, 0F),
+                            localScale = new Vector3(0.03F, 0.05F, 0.03F)
                         },
             };
             ItemDisplayRule[] SeekerRules = new ItemDisplayRule[]
@@ -562,10 +568,10 @@ namespace Impermanence
                         {
                             ruleType = ItemDisplayRuleType.ParentedPrefab,
                             followerPrefab = itemDef.pickupModelPrefab,
-                            childName = "Head",
-                            localPos = new Vector3(0f, 0.43f, 0f),
-                            localAngles = new Vector3(0f,0f,0f),
-                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                            childName = "Pack",
+                            localPos = new Vector3(-0.26289F, 0.1602F, -0.21764F),
+                            localAngles = new Vector3(345F, 90F, 0F),
+                            localScale = new Vector3(0.05F, 0.05F, 0.05F)
                         },
             };
             ItemDisplayRule[] CHEFRules = new ItemDisplayRule[]
@@ -574,10 +580,10 @@ namespace Impermanence
                         {
                             ruleType = ItemDisplayRuleType.ParentedPrefab,
                             followerPrefab = itemDef.pickupModelPrefab,
-                            childName = "Head",
-                            localPos = new Vector3(0f, 0.43f, 0f),
-                            localAngles = new Vector3(0f,0f,0f),
-                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                            childName = "Chest",
+                            localPos = new Vector3(-0.3189F, 0.16636F, -0.2061F),
+                            localAngles = new Vector3(0F, 0F, 90F),
+                            localScale = new Vector3(0.05F, 0.05F, 0.05F)
                         },
             };
             ItemDisplayRule[] SonRules = new ItemDisplayRule[]
@@ -586,10 +592,10 @@ namespace Impermanence
                         {
                             ruleType = ItemDisplayRuleType.ParentedPrefab,
                             followerPrefab = itemDef.pickupModelPrefab,
-                            childName = "Head",
-                            localPos = new Vector3(0f, 0.43f, 0f),
-                            localAngles = new Vector3(0f,0f,0f),
-                            localScale = new Vector3(0.05f,0.05f,0.05f),
+                            childName = "Pelvis",
+                            localPos = new Vector3(0.05234F, 0.12436F, 0.11509F),
+                            localAngles = new Vector3(5F, 225F, 0F),
+                            localScale = new Vector3(0.05F, 0.05F, 0.05F)
                         },
             };
 

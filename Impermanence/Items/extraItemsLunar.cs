@@ -33,7 +33,7 @@ namespace Impermanence
             "The time limit with one stack of impermanence.",
             new List<string>()
             {
-                "ITEM_EXTRAITEMSLUNAR_DESC"
+                 "ITEM_EXTRAITEMSLUNAR_DESC"
             }
         );
         public static ConfigurableValue<float> bonusChancePerStack = new(
@@ -107,8 +107,6 @@ namespace Impermanence
             ItemDisplayRuleDict displayRules = makeDisplayRules();
             ItemAPI.Add(new CustomItem(itemDef, displayRules));
 
-            Debug.Log("Impermanence Initialized");
-
             //BUFF//
             // chestBuff = ScriptableObject.CreateInstance<BuffDef>();
 
@@ -127,6 +125,8 @@ namespace Impermanence
 
             
             Hooks();
+
+            Debug.Log("Impermanence Initialized");
         }
 
         public static void Hooks()
@@ -159,7 +159,6 @@ namespace Impermanence
                     int multiplier = component.TryDoubleItem();
                     if (multiplier > 1)
                     {   
-                        Log.Debug("multiplying items");
                         Util.PlaySound("Play_item_proc_lowerPricedChest", body.gameObject);
                         
 
@@ -342,7 +341,6 @@ namespace Impermanence
                 int bonus = (int)MathF.Floor(proc);
                 if (Util.CheckRoll((proc - bonus)*100f, body.master)) bonus += 1;
                 
-                Debug.Log("TryDoubleItem(): multiplier=" + (bonus+1) + " proc=" + proc);
                 return bonus + 1;
             }
 

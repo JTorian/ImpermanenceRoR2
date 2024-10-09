@@ -22,7 +22,7 @@ namespace Impermanence
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "Braquen";
         public const string PluginName = "Impermanance";
-        public const string PluginVersion = "0.5.0";
+        public const string PluginVersion = "0.7.0";
 
 
         public static PluginInfo pluginInfo;

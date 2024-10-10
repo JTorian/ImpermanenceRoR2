@@ -15,45 +15,48 @@ namespace Impermanence
     //[BepInDependency(LookingGlass.PluginInfo.PLUGIN_GUID, BepInDependency.DependencyFlags.SoftDependency)]
 
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
-    [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.EveryoneNeedSameModVersion)]
+    [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.DifferentModVersionsAreOk)]
     public class ImpermanencePlugin : BaseUnityPlugin
     {
 
         public const string PluginGUID = PluginAuthor + "." + PluginName;
-        public const string PluginAuthor = "jtorian";
+        public const string PluginAuthor = "Braquen";
         public const string PluginName = "Impermanance";
-        public const string PluginVersion = "0.0.1";
+        public const string PluginVersion = "1.0.0";
 
 
         public static PluginInfo pluginInfo;
+        public static AssetBundle AssetBundle;
 
         public void Awake()
         {
-            pluginInfo = Info;
-
             Log.Init(Logger);
 
-            Log.Info($"Greetings from impermanence init!");
+            pluginInfo = Info;
+            AssetBundle = AssetBundle.LoadFromFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(pluginInfo.Location), "impermanenceassetbundle"));
 
-
-            ExtraItemsLunar.Init();
-        }
-
-        //TEST
-        private void Update()
-        {
-            // This if statement checks if the player has currently pressed F2.
-            if (Input.GetKeyDown(KeyCode.F2))
+            if (ExtraItemsLunar.isEnabled)
             {
-                // Get the player body to use a position:
-                var transform = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
-
-                // And then drop our defined item in front of the player.
-
-                Log.Info($"Player pressed F2. Spawning our custom item at coordinates {transform.position}");
-                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(ExtraItemsLunar.itemDef.itemIndex), transform.position, transform.forward * 20f);
+                GenericGameEvents.Init();
+                ExtraItemsLunar.Init();
             }
         }
+
+        // //TEST
+        // private void Update()
+        // {
+        //     // This if statement checks if the player has currently pressed F2.
+        //     if (Input.GetKeyDown(KeyCode.F2))
+        //     {
+        //         // Get the player body to use a position:
+        //         var transform = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
+
+        //         // And then drop our defined item in front of the player.
+
+        //         Log.Info($"Player pressed F2. Spawning our custom item at coordinates {transform.position}");
+        //         PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(ExtraItemsLunar.itemDef.itemIndex), transform.position, transform.forward * 20f);
+        //     }
+        // }
     }
 }
 

@@ -5,6 +5,8 @@
 
 #other
 Thunderstore/
+Assets/
+Library/
 
 # User-specific files
 *.suo

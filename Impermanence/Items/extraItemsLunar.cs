@@ -85,7 +85,6 @@ namespace Impermanence
                 ItemTag.Utility,
                 ItemTag.InteractableRelated,
                 ItemTag.AIBlacklist,
-                ItemTag.CannotCopy,
                 ItemTag.OnStageBeginEffect
             };
 

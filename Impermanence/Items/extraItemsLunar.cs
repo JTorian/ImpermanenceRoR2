@@ -8,6 +8,7 @@ using UnityEngine.AddressableAssets;
 using System;
 using RoR2.UI;
 using UnityEngine.UI;
+using Rewired.Utils;
 
 namespace Impermanence
 {
@@ -117,7 +118,7 @@ namespace Impermanence
             // chestBuff.isCooldown = false;
 
             //HUD//
-            hudTimer = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/UI/HudCountdownPanel.prefab").WaitForCompletion();
+            hudTimer = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/UI/HudCountdownPanel.prefab").WaitForCompletion().InstantiateClone("ImpermanenceCountdownTimer");
             hudTimer.transform.Find("Juice/Container/CountdownTitleLabel").GetComponent<LanguageTextMeshController>().token = "IMPERMANENCE_TIMER_FLAVOUR";
             var col = new Color32(0, 157, 255, 255);
             hudTimer.transform.Find("Juice/Container/Border").GetComponent<Image>().color = col;
@@ -219,22 +220,32 @@ namespace Impermanence
 
             public void Start()
             {
-                foreach (HUD hud in HUD.readOnlyInstanceList)
-                {
-                    if (hud.targetBodyObject == body.gameObject)
-                    {
-                        bodyHud = hud;
-                    }
-                }
+                Log.Debug("ImpermanenceBehavior:Start()");
+
+                hudPanel = null;
+
+                UpdateItemBasedInfo();
                 
                 //HOOKS//
                 body.onInventoryChanged += Body_onInventoryChanged;
                 Stage.onStageStartGlobal += Stage_onStageStartGlobal;
                 On.RoR2.BossGroup.OnDefeatedServer += BossGroup_onDefeatedServer;
+                
             }
 
             public void Update()
             {
+                //Get body hud if you haven't yet
+                if(bodyHud == null)
+                {
+                    foreach (HUD hud in HUD.readOnlyInstanceList)
+                    {
+                        if (hud.targetBodyObject == body.gameObject)
+                        {
+                            bodyHud = hud;
+                        }
+                    }
+                }
                 
                 if (stack > 0 && !bossDefeated)
                 {
@@ -273,7 +284,7 @@ namespace Impermanence
                 {
 
                     SetHudCountdownEnabled(false);
-                    ResetTimer();
+                    SetTimer(baseTimer);
 
                     // body.RemoveBuff(chestBuff);
                     if (countdown10Played)
@@ -287,6 +298,7 @@ namespace Impermanence
 
             public void OnDestroy()
             {
+                SetHudCountdownEnabled(false);
                 if (body) body.onInventoryChanged -= Body_onInventoryChanged;
                 Stage.onStageStartGlobal -= Stage_onStageStartGlobal;
                 On.RoR2.BossGroup.OnDefeatedServer -= BossGroup_onDefeatedServer;
@@ -299,14 +311,14 @@ namespace Impermanence
 
             public void Stage_onStageStartGlobal(Stage stage)
             {
-                ResetTimer();
+                UpdateItemBasedInfo();
                 bossDefeated = false;
             }
 
             public void BossGroup_onDefeatedServer(On.RoR2.BossGroup.orig_OnDefeatedServer orig, BossGroup self)
             {
                 //Ignore minibosses
-                if (self.name != "SuperRoboBallEncounter" || self.name != "ShadowCloneEncounter(Clone)")
+                if (self.name != "SuperRoboBallEncounter" && self.name != "ShadowCloneEncounter(Clone)")
                 {
                     bossDefeated = true;
                 }
@@ -325,9 +337,9 @@ namespace Impermanence
                 countdownTimer = Mathf.Min(baseTimer * Mathf.Pow( 1 - timerDecreasePercent, stack-1), countdownTimer); // Cut the timer down, unless the timer is already low enough
             }
 
-            public void ResetTimer()
+            public void SetTimer(float time)
             {
-                countdownTimer = baseTimer;
+                countdownTimer = time;
             }
 
             public int TryDoubleItem()
@@ -349,9 +361,10 @@ namespace Impermanence
                 //thinking about this gives me a headache
                 if ((hudPanel != null) != shouldEnableCountdownPanel)
                 {
-                    if (shouldEnableCountdownPanel)
+                    if (shouldEnableCountdownPanel && bodyHud != null)
                     {
                         RectTransform rectTransform = bodyHud.GetComponent<ChildLocator>().FindChild("TopCenterCluster") as RectTransform;
+
                         if (rectTransform)
                         {
                             hudPanel = Instantiate<GameObject>(hudTimer, rectTransform);

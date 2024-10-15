@@ -3,10 +3,11 @@
     "EXTRAITEMSLUNAR": "Impermanence",
     "ITEM_EXTRAITEMSLUNAR_NAME": "Impermanence",
     "ITEM_EXTRAITEMSLUNAR_PICKUP": "Gain a chance to double items from chests... <style=cDeath>BUT you have a time limit each stage.</style>.",
-    "ITEM_EXTRAITEMSLUNAR_DESC": "Before defeating the stage boss, chests have a <style=cIsUtility>20%</style> <style=cStack>(+20% per stack)</style> to grant <style=cIsUtility>double items</style>. After <style=cDeath>10</style> <style=cStack>(-15% per stack)</style> minutes on a stage without defeating the boss, <style=cDeath>you die</style>.",
+    "ITEM_EXTRAITEMSLUNAR_DESC": "Before defeating the stage boss, chests have a <style=cIsUtility>20%</style> <style=cStack>(+20% per stack)</style> chance to grant <style=cIsUtility>double items</style>. After <style=cDeath>10</style> <style=cStack>(-15% per stack)</style> minutes on a stage without defeating the boss, <style=cDeath>you die</style>.",
     "ITEM_EXTRAITEMSLUNAR_LORE": "
 
     Servitude is not without its benefits. I can grant you many things. 
+
 
     Shall we make a deal?",
 

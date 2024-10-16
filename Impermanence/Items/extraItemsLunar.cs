@@ -117,7 +117,7 @@ namespace Impermanence
             // chestBuff.isCooldown = false;
 
             //HUD//
-            hudTimer = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/UI/HudCountdownPanel.prefab").WaitForCompletion().InstantiateClone("ImpermanenceCountdownTimer");
+            hudTimer = PrefabAPI.InstantiateClone(Addressables.LoadAssetAsync<GameObject>("RoR2/Base/UI/HudCountdownPanel.prefab").WaitForCompletion(), "ImpermanenceCountdownPanel");
             hudTimer.transform.Find("Juice/Container/CountdownTitleLabel").GetComponent<LanguageTextMeshController>().token = "IMPERMANENCE_TIMER_FLAVOUR";
             var col = new Color32(0, 157, 255, 255);
             hudTimer.transform.Find("Juice/Container/Border").GetComponent<Image>().color = col;
@@ -379,7 +379,8 @@ namespace Impermanence
 
             public void SetCountdownTime(double secondsRemaining)
             {
-                    hudPanel.GetComponent<TimerText>().seconds = secondsRemaining;
+                if (hudPanel == null) return;
+                hudPanel.GetComponent<TimerText>().seconds = secondsRemaining;
             }
 
             public void OnEnable()
